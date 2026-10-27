@@ -1,0 +1,10 @@
+{
+  "name": "cv-online-presenter-content",
+  "private": true,
+  "scripts": {
+    "validate": "node scripts/validate-content.mjs"
+  },
+  "devDependencies": {
+    "gray-matter": "4.0.3"
+  }
+}
