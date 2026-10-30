@@ -7,4 +7,4 @@ type: page
 ---
 # Kontakt
 
-Lägg till en godkänd e-postadress eller professionell profil i webbplatskonfigurationen för att aktivera en kontaktlänk.
+Lägg till en godkänd e-postadress i webbplatskonfigurationen för att aktivera e-postlänken. Kontaktformulär ingår inte i första releasen.

@@ -1,2 +1,8 @@
-{"supportedLocales":["sv-SE"],"contactEmail":null,"siteName":"Konsultportfolio","siteUrl":null}
-
+{
+    "supportedLocales": [
+        "sv-SE"
+    ],
+    "contactEmail": null,
+    "siteName": "Fredrik Hallerös",
+    "siteUrl": "https://hellmangroup.se"
+}
