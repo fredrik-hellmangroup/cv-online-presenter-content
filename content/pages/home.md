@@ -1,13 +1,15 @@
 ---
-title: Din konsultportfolio
-description: En tillgänglig portfolio för att visa ditt erbjudande, erfarenhet och kontaktväg.
+title: Fredrik Hallerös
+description: Lösningsarkitekt och senior .NET-konsult med erfarenhet av integration, Azure och datadrivna lösningar.
 locale: sv-SE
 status: published
 type: page
+source: sources/owner-cv-v1.2.md
 ---
-# Visa vad du kan bidra med
+# Fredrik Hallerös
 
-Beskriv här din konsultroll, ditt erbjudande och hur du hjälper kunder. Publicera personliga uppgifter först när de har granskats och godkänts.
+Senior konsult med över 18 års erfarenhet av backendutveckling, lösningsarkitektur, integrationer och DevOps, med tyngdpunkt i .NET, Azure och SQL-baserade lösningar.
 
-[Se profil och erfarenhet](/profile) · [Utforska tjänster](/services) · [Se projekt](/projects) · [Ta kontakt](/contact)
+Jag arbetar nära implementation i komplexa miljöer där system, datakällor och verksamhetsbehov behöver knytas ihop till stabila lösningar.
 
+[Profil](/profile) · [Kompetensområden](/services) · [Uppdrag](/projects) · [Fullständigt CV](/cv) · [Kontakt](/contact)
