@@ -2,7 +2,8 @@
     "supportedLocales": [
         "sv-SE"
     ],
-    "contactEmail": null,
+    "contactEmail": "fredrik@hellmangroup.se",
     "siteName": "Fredrik Hallerös",
+    "companyName": "Hellman Group AB",
     "siteUrl": "https://hellmangroup.se"
 }

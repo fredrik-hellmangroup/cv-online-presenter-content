@@ -6,11 +6,10 @@ Owner approval: application decision register OQ-04 approves factual content fro
 | --- | --- |
 | `content/pages/cv.md` | Entire owner CV |
 | `content/pages/home.md` | Roller, Översikt |
-| `content/pages/profile.md` | Roller, Översikt, Branscherfarenhet |
 | `content/pages/services.md` | Kompetensområden |
 | `content/pages/projects.md` | Uppdragshistorik |
 | `content/pages/projects/nordhem.md` | Uppdragshistorik / Nordhemfastighetsmäkleri |
 | `content/pages/projects/stockholmsmassan.md` | Uppdragshistorik / Stockholms Mässan |
 | `content/pages/projects/asira.md` | Uppdragshistorik / Asira |
 
-The contact page contains no approved address; `contactEmail` remains null. `content/pages/demo-profile.md` stays synthetic and draft-only. Review factual wording against the source before selecting a content commit for release.
+The contact address `fredrik@hellmangroup.se` is approved by the owner and set as `contactEmail` in `content/content/site.json`. `content/pages/demo-profile.md` stays synthetic and draft-only. Review factual wording against the source before selecting a content commit for release.
