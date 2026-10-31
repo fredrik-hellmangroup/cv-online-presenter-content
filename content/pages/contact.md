@@ -7,4 +7,4 @@ type: page
 ---
 # Kontakt
 
-Lägg till en godkänd e-postadress i webbplatskonfigurationen för att aktivera e-postlänken. Kontaktformulär ingår inte i första releasen.
+Söker du en konsult, har ett uppdrag på gång eller vill bara bolla en idé? Hör av dig.

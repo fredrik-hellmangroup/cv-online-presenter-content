@@ -1,5 +1,5 @@
 ---
-title: Fredrik Hallerös – CV
+title: CV
 description: Fullständigt CV för Fredrik Hallerös, lösningsarkitekt och senior .NET-konsult.
 locale: sv-SE
 status: published
@@ -7,7 +7,7 @@ type: page
 source: sources/owner-cv-v1.2.md
 sourceSha256: 04EFA1B7F6844E628A1F992B9A081025D690CF62CBC3BDFCF4B780FAA02DB03C
 ---
-# FREDRIK HALLERÖS
+# Fredrik Hallerös – Lösningsarkitekt och senior .NET-konsult
 
 ## Roller
 - Lösningsarkitekt / teknisk lead nära implementation
@@ -397,7 +397,7 @@ Lösningen gav ett stabilare och snabbare datagrundlag för rapportering, analys
 Oracle, SSIS, Microsoft SQL Server, Data Warehouse, Power BI, GitLab, ETL, SFTP, integrationer, rapportering, data lakes
 
 ## Anställningar
-- IT-konsult, Hellman Group AB, 2023 - pågående
+- Egenföretagare IT-konsult, Hellman Group AB, 2023 - pågående
 - Sammarbetsavtal, Kvadrat, 2025 - 2026
 - IoT Backend Engineer, Telia Company AB, 2020 - 2023
 - IT-konsult, Consid, 2016 - 2020

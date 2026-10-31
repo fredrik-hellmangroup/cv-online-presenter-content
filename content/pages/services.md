@@ -1,5 +1,5 @@
 ---
-title: Kompetens och tjänster
+title: Kompetens
 description: Fredrik Hallerös kompetens inom lösningsarkitektur, .NET, integration och plattform.
 locale: sv-SE
 status: published
@@ -7,7 +7,7 @@ type: page
 source: sources/owner-cv-v1.2.md
 sourceSection: Kompetensområden
 ---
-# Kompetens och tjänster
+# Kompetensområden
 
 ## Lösningsarkitektur och utveckling
 
