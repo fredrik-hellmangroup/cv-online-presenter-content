@@ -1,8 +1,8 @@
 # CV Online Presenter Content
 
-Owner-approved CV facts for the [`cv-online-presenter`](https://github.com/fredrik-hellmangroup/cv-online-presenter) app. The canonical public CV is `content/sources/master-cv.md` (approved under OQ-04). Do not add contact details, images or external profile links without separate approval. The synthetic example stays clearly labeled and draft-only.
+Owner-approved CV facts for the [`cv-online-presenter`](https://github.com/fredrik-hellmangroup/cv-online-presenter) app. This repository is **private**. The canonical CV is `content/sources/master-cv.md` (approved under OQ-04). Do not add contact details, images or external profile links without separate approval. The synthetic example stays clearly labeled and draft-only.
 
-The app pins one commit of this repository as its `content` submodule. That commit is the content revision for a build.
+The app does not pin this repository. Each merge to `main` that changes `content/pages/**` or `content/site.json` is deployed as a named content release (`<UTC date>-<sha>`) to IIS by the `Deploy content` workflow and activated at runtime. The public app repository holds only a synthetic template of the same layout.
 
 ## Edit-to-website flow
 
@@ -13,11 +13,11 @@ flowchart LR
     C --> D["Generator opens PR<br/>automation/generated-content"]
     D --> E["Review generated diff"]
     E --> F["Merge labeled PR"]
-    F --> G["Handoff dispatch to app repo"]
-    G --> H(["App PR bumps content pointer"])
+    F --> G["Deploy content: validate, Web Deploy,<br/>preview, activate"]
+    G --> H(["Live site"])
 ```
 
-A handoff signals a new content revision only. The app PR is reviewed and released separately.
+Release folders are immutable. Rollback activates an earlier release id.
 
 ## Local commands
 
@@ -51,14 +51,14 @@ Add the `generated-content` label before enabling automation.
 | Environment | Secrets | GitHub App permissions | Restriction |
 | --- | --- | --- | --- |
 | `content-writer` | `CONTENT_WRITER_APP_ID`, `CONTENT_WRITER_APP_PRIVATE_KEY` | `contents: write`, `pull_requests: write`, installed only on this repository | `main` only; generator job only |
-| `app-handoff` | `APP_HANDOFF_APP_ID`, `APP_HANDOFF_APP_PRIVATE_KEY` | `contents: write`, installed only on `fredrik-hellmangroup/cv-online-presenter` | `main` only; runs after the read-only merged-PR guard |
+| `production-content` | Secrets `DEPLOY_PASSWORD`, `CONTENT_ACTIVATION_TOKEN`; variables `MSDEPLOY_SERVER_URL`, `MSDEPLOY_SITE_NAME`, `MSDEPLOY_CERTIFICATE_SHA256`, `DEPLOY_USERNAME`, `MSDEPLOY_CONTENT_RELEASES_PATH`, `CONTENT_ACTIVATION_URL`, `APP_REPO_REF` | None (Web Deploy credentials and activation token only) | `main` only; `Deploy content` workflow |
 
 Principles:
 
-- Keep `GITHUB_TOKEN` read-only. Grant write access only through the App tokens above.
-- Do not use `pull_request_target`, and never expose writer credentials to pull-request jobs.
+- Keep `GITHUB_TOKEN` read-only. Grant write access only through the App token above.
+- Do not use `pull_request_target`, and never expose writer or deploy credentials to pull-request jobs.
 - Protect `main` with required checks. The content-writer App writes only the stable generated branch and never pushes to `main`.
-- Do not use `GITHUB_TOKEN` for cross-repository dispatch.
+- This repository is **private**. It holds the personal CV, so keep it private and never copy its content into the public app repository.
 
 ## Troubleshooting
 
@@ -70,8 +70,10 @@ Principles:
 | Stale `.cv-generation.lock` | Confirm that no generation process is running, delete that exact file, then rerun. The generator never removes a lock automatically. |
 | Pending transaction journal | Run `npm run generate:write`. It recovers the interrupted transaction before writing. |
 | Generated PR is closed and unmerged | Inspect it. Dispatch with `reopen_closed=true` only if it should resume and output still differs from `main`. |
-| App token or dispatch fails | Check the App installation, environment secrets, permissions and the `generated-content` label. Rerun after fixing setup. |
+| `Deploy content` fails at upload | Check the Web Deploy user's write access to the releases folder, the certificate fingerprint and `MSDEPLOY_CONTENT_RELEASES_PATH`. |
+| `Deploy content` fails at activate | Check `Content__ReleasesRoot`/`Content__ActivationToken` on the server, that the token matches `CONTENT_ACTIVATION_TOKEN`, and that the app pool can write `active-release.txt`. |
 
-A successful handoff signals a content revision only. The app PR still needs review, and release is a separate manual step.
+Rollback: run `Deploy content` manually from `main` with `activate_release_id` set to an earlier release id.
+
 
 MIT licensed. See [LICENSE](./LICENSE).
