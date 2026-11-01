@@ -1,51 +1,77 @@
 # CV Online Presenter Content
 
-This public repository contains owner-approved CV facts for the [`cv-online-presenter`](https://github.com/fredrik-hellmangroup/cv-online-presenter) app. The canonical full public CV is `content/sources/master-cv.md`; the source is approved for public factual content under decision OQ-04. Do not add contact details, images or external profile links without separate approval. The synthetic example remains clearly labeled and draft-only.
+Owner-approved CV facts for the [`cv-online-presenter`](https://github.com/fredrik-hellmangroup/cv-online-presenter) app. The canonical public CV is `content/sources/master-cv.md` (approved under OQ-04). Do not add contact details, images or external profile links without separate approval. The synthetic example stays clearly labeled and draft-only.
 
-The app links to a specific commit of this repository as the `content` Git submodule. That Git commit is the content revision used for a build and can be restored together with the app commit.
+The app pins one commit of this repository as its `content` submodule. That commit is the content revision for a build.
 
-## Requirements and validation
+## Edit-to-website flow
 
-- Node.js 24 and npm
+```mermaid
+flowchart LR
+    A["Edit source or source-map.json<br/>in a PR"] --> B["CI validates<br/>structure, links, audit, secrets"]
+    B --> C["Merge to main"]
+    C --> D["Generator opens PR<br/>automation/generated-content"]
+    D --> E["Review generated diff"]
+    E --> F["Merge labeled PR"]
+    F --> G["Handoff dispatch to app repo"]
+    G --> H(["App PR bumps content pointer"])
+```
+
+A handoff signals a new content revision only. The app PR is reviewed and released separately.
+
+## Local commands
+
+Requires Node.js 24 and npm.
 
 ```powershell
 npm ci
 npm run validate
 ```
 
-The independent content CI runs on pull requests and pushes to `main`. It runs the built-in generator tests and source checks, then validates Markdown front matter, supported locales, publication status, required fields, internal links, URL schemes, npm advisories, and likely secrets.
+Before pushing generator changes, also run `npm run generate:validate-source`, `npm test` and `npm run generate:check`.
 
 ## Source ownership and generated pages
 
-Edit the canonical source or `content/source-map.json`; do not hand-edit generated pages. Mapping metadata is maintained in the map. The generator copies exact CV sections into a fixed public allowlist: `cv.md`, `home.md`, `services.md`, `projects.md`, and the Asira, Nordhem, and Stockholmsmässan project pages. It never reads or generates `profile.md`, and never generates the contact or demo-profile page. See [PROVENANCE.md](./PROVENANCE.md) for section mapping and hashes.
+Edit the canonical source or `content/source-map.json`. Never hand-edit generated pages; change the source and regenerate. The generator writes a fixed allowlist of seven pages: `cv.md`, `home.md`, `services.md`, `projects.md`, and the Asira, Nordhem and Stockholmsmässan project pages. It never reads or generates `profile.md` or the contact/demo page. See [PROVENANCE.md](./PROVENANCE.md) for the section mapping and hashes.
 
-Run `npm run generate:validate-source`, `npm test`, `npm run generate:check`, and `npm run validate` locally. `npm run generate:write` is fail-closed: before its first write it checks the seven tracked pages against their recorded bootstrap hashes; afterwards it checks them against the last generated provenance. Both `--write` and `--check` acquire an exclusive `.cv-generation.lock` file using exclusive creation; a lock prevents either operation. The lock records its owner PID and a unique token, and normal release removes it only when the token still matches. If a process exits unexpectedly, or lock cleanup itself fails, `.cv-generation.lock` may remain: the generator never removes a lock based on a PID check. Inspect that exact file and its PID, verify no content-generation process is active for this workspace (for example, inspect the process returned by `Get-Process -Id <pid>`), then remove only that exact file with `Remove-Item -LiteralPath .cv-generation.lock` and rerun; after this cleanup, `--write` can recover a pending transaction journal. When cleanup fails during another operation, the error reports both the original and cleanup failures with these recovery steps. The generator records prior file contents in a durable transaction journal before replacing any output, and stages replacements beside their targets before atomic rename. A caught write error rolls back immediately using the same staged replacement approach; the next `--write` recovers an interrupted transaction before retrying. Before journal removal, every committed output file and its parent directory are synced while the journal is still present. Journal and temporary-file parent directories are synced after their directory-entry changes. Directory syncing is skipped only when the platform/filesystem reports that directory fsync is unsupported; other I/O errors fail the operation. If the root sync fails after journal removal, the generator reports that outputs are committed and journal-removal durability is uncertain without rolling back; an on-disk journal still enables safe recovery, while no journal means outputs are complete. `--check` refuses to run while recovery is pending. The journal and temporary files are not generated outputs and are removed after successful writes or recovery. Do not run generation concurrently with any other process that mutates this workspace; external workspace mutation while generation is running is unsupported. The generator revalidates the canonical root and paths at filesystem operations and detects changed inputs/outputs where possible. Manual changes to generated pages must be made in the source/map and regenerated, not overwritten.
+Generation is fail-closed and journaled:
 
-## Edit-to-release flow
+- `--write` and `--check` take an exclusive `.cv-generation.lock`. Do not run generation concurrently with another process that changes this workspace.
+- Writes are journaled and atomic. A failed write rolls back, and the next `--write` recovers any interrupted transaction.
+- Manual edits to generated output make `--check` and `--write` fail rather than be overwritten.
 
-1. Make a source or mapping change in a pull request. CI validates the source and mapping; the existing content validation, npm audit and secret scan remain required.
-2. After that change is merged to trusted `main`, `Generate public CV content PR` creates or updates the stable `automation/generated-content` branch. It opens a PR labeled `generated-content`, or does nothing when there are no generated changes. If an open generated-content PR becomes stale because generated output now matches `main`, automation comments, closes the PR, and deletes its stable branch. A later automatic workflow will not reopen it; an authorized maintainer must review the exact closed PR number and manually dispatch `Generate public CV content PR` from `main` with `reopen_closed=true` to reopen/update that PR.
-3. Review the generated page diff and provenance. Merge the generated-content PR only after the public facts and rendered pages are verified.
-4. On that labeled PR's merge to `main`, a `main` push starts the handoff workflow. A read-only guard first verifies that the pushed commit is the merge commit of the same-repository, labeled generated-content PR. Only then does the separately gated handoff job access its environment and send a `content-generated-pr-merged-v1` repository dispatch to the app repository. Its `client_payload` contains `pr_number`, `head_sha`, `merge_commit_sha`, and `content_repository`. The app-side workflow can then open/update the app PR with the exact content revision. Release/deployment remains a separate manual app-repository action.
+## Closed generated PRs
 
-The generator will fail on invalid source structure, duplicate/ambiguous section headings, bootstrap hash mismatch, malformed provenance, or manually modified generated output. A closed, unmerged generated-content PR is not silently replaced or reopened: after a stale PR is automatically closed, a later automatic run does not reopen it and instead stops while preserving it. After reviewing the exact closed PR number shown in the workflow output/comment, an authorized maintainer must manually dispatch `Generate public CV content PR` from `main` with `reopen_closed=true` to reopen/update that PR if generated output still differs from `main`. The PR number is resolved from the stable automation branch; it is not a separate dispatch input. Without the explicit `reopen_closed=true` input, the workflow preserves the closed PR; if output now matches `main`, no PR is reopened. A normal dispatch can safely retry other failed runs, but it does not reopen a closed PR.
+A stale generated-content PR (output now matches `main`) is commented on, closed, and its stable branch deleted automatically. Automation never reopens it. To resume a closed, unmerged PR, an authorized maintainer reviews it and dispatches `Generate public CV content PR` from `main` with `reopen_closed=true`. Without that input the PR stays closed.
 
-## GitHub setup and least privilege
+## GitHub setup
 
-- Add the `generated-content` label to this repository before enabling automation.
-- Create a GitHub Actions Environment named **`content-writer`** in this repository. Add environment secrets `CONTENT_WRITER_APP_ID` and `CONTENT_WRITER_APP_PRIVATE_KEY` there (not as repository or organization secrets). Restrict deployments for this environment to the protected `main` branch only. Install the **content-writer GitHub App only on this content repository**, with `contents: write` and `pull_requests: write`. The token is minted only by the generator job, which also explicitly requires `github.ref == 'refs/heads/main'`; pull-request validation does not receive either secret.
-- Create a separate GitHub Actions Environment named **`app-handoff`** in this repository. Add environment secrets `APP_HANDOFF_APP_ID` and `APP_HANDOFF_APP_PRIVATE_KEY` there (not as repository or organization secrets), and restrict deployments to the protected `main` branch only. Install the separate **app-handoff GitHub App only on `fredrik-hellmangroup/cv-online-presenter`**, with `contents: write`. The dispatch job explicitly requires `github.ref == 'refs/heads/main'` and depends on a preceding read-only guard that verifies the merged generated-content PR; only that guarded job enters `app-handoff` and accesses its secrets. Its token is limited to the app repository. Never use `GITHUB_TOKEN` for cross-repository dispatch.
-- Keep `GITHUB_TOKEN` read-only by default. Workflows request only the read permissions needed for validation and the merged-PR guard; App tokens provide the specific write capabilities. Do not use `pull_request_target` or expose writer credentials to source-PR jobs.
-- Protect `main` with pull requests and required validation checks. Do not grant the content-writer App direct push access to `main`; it writes only the stable generated branch. Protect generated pages through review of the generated PR, not by granting the automation broader repository permissions.
+Add the `generated-content` label before enabling automation.
 
-## Reruns and troubleshooting
+| Environment | Secrets | GitHub App permissions | Restriction |
+| --- | --- | --- | --- |
+| `content-writer` | `CONTENT_WRITER_APP_ID`, `CONTENT_WRITER_APP_PRIVATE_KEY` | `contents: write`, `pull_requests: write`, installed only on this repository | `main` only; generator job only |
+| `app-handoff` | `APP_HANDOFF_APP_ID`, `APP_HANDOFF_APP_PRIVATE_KEY` | `contents: write`, installed only on `fredrik-hellmangroup/cv-online-presenter` | `main` only; runs after the read-only merged-PR guard |
 
-- Source/map validation fails: fix missing or malformed source headings or mapping metadata, then rerun the content PR checks.
-- Bootstrap hash mismatch: stop; verify the baseline pages and mapping rather than replacing hashes to force a write.
-- Generated-output conflict: output conflict checks apply to `--check` and `--write`, not `--validate-source`, which validates only the source and mapping. Restore/regenerate from the canonical source and mapping; do not make manual edits to generated pages. `--write` intentionally refuses to overwrite edits.
-- Existing `.cv-generation.lock`: the generator reports the recorded PID and leaves the lock untouched. Confirm that no content-generation process is active, remove that exact file manually, then rerun; use `npm run generate:write` to recover a pending transaction journal.
-- Existing PR is closed but unmerged: inspect it first; if it should resume and generated output still differs from `main`, dispatch manually with `reopen_closed=true`. This is the only supported automated reopen path. If output matches `main`, leave it closed; stale open PRs are commented on, closed, and their stable branch is deleted automatically.
-- App token or dispatch failure: check the relevant App installation, repository-specific secrets, minimum permissions and `generated-content` label. The app handoff is emitted only for a merged labeled generated-content PR on `main`; rerun the failed workflow after fixing setup.
-- A successful handoff only signals a content revision. App PR review and release are not automatic releases and remain governed by the app repository's workflow.
+Principles:
+
+- Keep `GITHUB_TOKEN` read-only. Grant write access only through the App tokens above.
+- Do not use `pull_request_target`, and never expose writer credentials to pull-request jobs.
+- Protect `main` with required checks. The content-writer App writes only the stable generated branch and never pushes to `main`.
+- Do not use `GITHUB_TOKEN` for cross-repository dispatch.
+
+## Troubleshooting
+
+| Symptom | Action |
+| --- | --- |
+| Source or map validation fails | Fix the source headings or mapping metadata, then rerun the content PR checks. `--validate-source` checks only source and mapping. |
+| Bootstrap hash mismatch | Stop. Verify the baseline pages and mapping. Do not replace hashes to force a write. |
+| Generated-output conflict | Regenerate from the canonical source and mapping. Do not edit generated pages. `--write` refuses to overwrite manual edits. |
+| Stale `.cv-generation.lock` | Confirm that no generation process is running, delete that exact file, then rerun. The generator never removes a lock automatically. |
+| Pending transaction journal | Run `npm run generate:write`. It recovers the interrupted transaction before writing. |
+| Generated PR is closed and unmerged | Inspect it. Dispatch with `reopen_closed=true` only if it should resume and output still differs from `main`. |
+| App token or dispatch fails | Check the App installation, environment secrets, permissions and the `generated-content` label. Rerun after fixing setup. |
+
+A successful handoff signals a content revision only. The app PR still needs review, and release is a separate manual step.
 
 MIT licensed. See [LICENSE](./LICENSE).
