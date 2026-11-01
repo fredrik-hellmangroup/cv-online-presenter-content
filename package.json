@@ -2,7 +2,11 @@
   "name": "cv-online-presenter-content",
   "private": true,
   "scripts": {
-    "validate": "node scripts/validate-content.mjs"
+    "validate": "node scripts/validate-content.mjs",
+    "test": "node --test scripts/generate-content.test.mjs",
+    "generate:validate-source": "node scripts/generate-content.mjs --validate-source",
+    "generate:check": "node scripts/generate-content.mjs --check",
+    "generate:write": "node scripts/generate-content.mjs --write"
   },
   "devDependencies": {
     "gray-matter": "4.0.3"

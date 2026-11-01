@@ -1,0 +1,103 @@
+name: Notify app repository after content merge
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  merged-content-guard:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      allowed: ${{ steps.guard.outputs.allowed }}
+      pr_number: ${{ steps.guard.outputs.pr_number }}
+      head_sha: ${{ steps.guard.outputs.head_sha }}
+      merge_commit_sha: ${{ steps.guard.outputs.merge_commit_sha }}
+    steps:
+      - name: Confirm the pushed commit is a merged generated-content PR
+        id: guard
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const commitSha = context.sha;
+            const { data: pullRequests } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: commitSha
+            });
+            const pullRequest = pullRequests.find(candidate =>
+              candidate.merged_at &&
+              candidate.merge_commit_sha === commitSha &&
+              candidate.base.ref === 'main' &&
+              candidate.head.ref === 'automation/generated-content' &&
+              candidate.head.repo?.full_name === `${context.repo.owner}/${context.repo.repo}` &&
+              candidate.labels.some(label => label.name === 'generated-content')
+            );
+            if (!pullRequest) {
+              core.setOutput('allowed', 'false');
+              core.info(`Commit ${commitSha} is not the merge commit of an eligible generated-content PR.`);
+              return;
+            }
+            core.setOutput('allowed', 'true');
+            core.setOutput('pr_number', String(pullRequest.number));
+            core.setOutput('head_sha', pullRequest.head.sha);
+            core.setOutput('merge_commit_sha', pullRequest.merge_commit_sha);
+            core.info(`Confirmed merged generated-content PR #${pullRequest.number}.`);
+
+  dispatch:
+    needs: merged-content-guard
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      needs.merged-content-guard.outputs.allowed == 'true'
+    runs-on: ubuntu-24.04
+    environment: app-handoff
+    permissions:
+      contents: read
+    steps:
+      - name: Create app-handoff App token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          owner: fredrik-hellmangroup
+          repositories: cv-online-presenter
+          app-id: ${{ secrets.APP_HANDOFF_APP_ID }}
+          private-key: ${{ secrets.APP_HANDOFF_APP_PRIVATE_KEY }}
+          permission-contents: write
+      - name: Dispatch merged content revision to app
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          PR_NUMBER: ${{ needs.merged-content-guard.outputs.pr_number }}
+          CONTENT_HEAD_SHA: ${{ needs.merged-content-guard.outputs.head_sha }}
+          MERGE_COMMIT_SHA: ${{ needs.merged-content-guard.outputs.merge_commit_sha }}
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            const payload = {
+              content_repository: `${context.repo.owner}/${context.repo.repo}`,
+              pr_number: Number(process.env.PR_NUMBER),
+              head_sha: process.env.CONTENT_HEAD_SHA,
+              merge_commit_sha: process.env.MERGE_COMMIT_SHA
+            };
+            if (!payload.merge_commit_sha || payload.merge_commit_sha !== context.sha) {
+              throw new Error('Merged generated-content PR has no matching merge SHA; refusing incomplete dispatch.');
+            }
+            await github.rest.repos.createDispatchEvent({
+              owner: 'fredrik-hellmangroup',
+              repo: 'cv-online-presenter',
+              event_type: 'content-generated-pr-merged-v1',
+              client_payload: payload
+            });
+            core.summary
+              .addHeading('App repository notified')
+              .addList([
+                `Content PR #${payload.pr_number}`,
+                `Content head: \`${payload.head_sha}\``,
+                `Content merge: \`${payload.merge_commit_sha}\``
+              ])
+              .write();

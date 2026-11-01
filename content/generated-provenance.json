@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "source": "content/sources/master-cv.md",
+  "sourceSha256": "67cad6e5ad74c60f3584787b51fea7a1ab1819d8d2976fe517b44e064c932c67",
+  "sourceMap": "content/source-map.json",
+  "sourceMapSha256": "6b138c2afc4512043fe43d3ba7af8e8638de16caf96c3260d2aa9c6fa44b1e0b",
+  "generator": "scripts/generate-content.mjs",
+  "generatorSha256": "0ddccdfa7176c8e3f33aeba7405f915aa372a397a4bbdc9b7b8f79c57595bd7e",
+  "generatedPages": [
+    "content/pages/cv.md",
+    "content/pages/home.md",
+    "content/pages/services.md",
+    "content/pages/projects.md",
+    "content/pages/projects/asira.md",
+    "content/pages/projects/nordhem.md",
+    "content/pages/projects/stockholmsmassan.md"
+  ],
+  "outputSha256": {
+    "content/pages/cv.md": "c8e7722f975a227839a1cff4c9f87237825eda185fbdc112b7eb398c7926ed53",
+    "content/pages/home.md": "4737b223f22416107ad1a86737b0dc942cf39b188c06d89b209530b6a7e5eeeb",
+    "content/pages/services.md": "895eac4d802018f9cef671d195d5878c54205b2cadf204baed10f66d9f30813c",
+    "content/pages/projects.md": "c85e784d3dfe9f3cb4a6f410c73e97eb81b21582e1807314ecc4623c322151f1",
+    "content/pages/projects/asira.md": "236e01e82d6ae4363be23ca990cd07e0186dc520174a0b2aa042bb0f554fcd01",
+    "content/pages/projects/nordhem.md": "1a46a422ba3146e0dc1a1603764dc4c076d37fe04ae88c60eff8c3d895e4d917",
+    "content/pages/projects/stockholmsmassan.md": "0b12d13a1b37341e55641015d0a0890b4421451330b9d093ffcca91f779f5682"
+  },
+  "provenanceSha256": "d2fcc04029e6b601b0102c2e0e7516ee5b8776d5f958dee7783482326d17e73e"
+}

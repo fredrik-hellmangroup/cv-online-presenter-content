@@ -1,0 +1,170 @@
+name: Generate public CV content PR
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - content/sources/master-cv.md
+      - content/source-map.json
+      - scripts/generate-content.mjs
+      - scripts/generate-content.test.mjs
+      - package.json
+      - package-lock.json
+      - .github/workflows/generate-content-pr.yml
+  workflow_dispatch:
+    inputs:
+      reopen_closed:
+        description: Reopen the existing closed, unmerged generated-content PR
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: generated-content-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    environment: content-writer
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run generate:validate-source
+      - run: npm run validate
+      - name: Create content-writer App token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ secrets.CONTENT_WRITER_APP_ID }}
+          private-key: ${{ secrets.CONTENT_WRITER_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+      - name: Generate, update branch and open pull request
+        id: publish
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          CONTENT_WRITER_TOKEN: ${{ steps.app-token.outputs.token }}
+          REOPEN_CLOSED: ${{ github.event_name == 'workflow_dispatch' && inputs.reopen_closed }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch="automation/generated-content"
+          repo="$GITHUB_REPOSITORY"
+          existing="$(gh pr list --repo "$repo" --head "$GITHUB_REPOSITORY_OWNER:$branch" --state all --json number,state,mergedAt --jq '[.[] | select(.state == "CLOSED" and .mergedAt == null or .state == "OPEN")] | first // empty')"
+          pr_number=""
+          pr_state=""
+          if [[ -n "$existing" ]]; then
+            pr_number="$(jq -r '.number' <<<"$existing")"
+            pr_state="$(jq -r '.state' <<<"$existing")"
+            merged_at="$(jq -r '.mergedAt // empty' <<<"$existing")"
+            if ! labels="$(gh pr view "$pr_number" --repo "$repo" --json labels --jq '.labels[].name')"; then
+              echo "::error::Unable to verify the generated-content label on PR #$pr_number. Check that the content-writer App has pull-requests: write permission, then retry." >&2
+              exit 1
+            fi
+            if ! grep -Fxq "generated-content" <<<"$labels"; then
+              if ! gh pr edit "$pr_number" --repo "$repo" --add-label generated-content; then
+                echo "::error::Could not add the required generated-content label to PR #$pr_number. Create the generated-content label in this repository and verify the content-writer App has pull-requests: write permission, then retry." >&2
+                exit 1
+              fi
+              if ! labels="$(gh pr view "$pr_number" --repo "$repo" --json labels --jq '.labels[].name')" ||
+                ! grep -Fxq "generated-content" <<<"$labels"; then
+                echo "::error::PR #$pr_number still does not have the generated-content label after attempting to add it. Create the label in this repository and verify the content-writer App has pull-requests: write permission." >&2
+                exit 1
+              fi
+            fi
+            if [[ "$pr_state" == "CLOSED" && -z "$merged_at" && "$REOPEN_CLOSED" != "true" ]]; then
+              echo "A closed, unmerged generated-content PR (#$pr_number) exists. Automatic runs will not reopen it; after review, manually dispatch this workflow from main with reopen_closed=true to reopen/update this exact PR." >&2
+              exit 1
+            fi
+          fi
+
+          npm run generate:write
+          npm run validate
+          if git diff --quiet -- content/pages/cv.md content/pages/home.md content/pages/services.md content/pages/projects.md content/pages/projects/asira.md content/pages/projects/nordhem.md content/pages/projects/stockholmsmassan.md content/generated-provenance.json; then
+            if [[ -n "$pr_number" && "$pr_state" == "OPEN" ]]; then
+              gh pr close "$pr_number" --repo "$repo" --comment "Closing this generated-content PR because current generated output matches \`main\`; its changes are stale and are no longer needed. The stable automation branch is deleted. A later automatic workflow will not reopen this PR. After review, an authorized maintainer must manually dispatch Generate public CV content PR from main with reopen_closed=true to reopen/update this exact PR (#$pr_number)." --delete-branch
+              echo "changed=false" >> "$GITHUB_OUTPUT"
+              echo "action=closed-stale" >> "$GITHUB_OUTPUT"
+              echo "number=$pr_number" >> "$GITHUB_OUTPUT"
+              echo "Closed stale generated-content PR #$pr_number because generated output matches main."
+            else
+              echo "changed=false" >> "$GITHUB_OUTPUT"
+              echo "Generated output matches main; no PR update is needed."
+            fi
+            exit 0
+          fi
+
+          if [[ -n "$pr_number" ]]; then
+            remote_sha="$(git ls-remote --heads origin "refs/heads/$branch" | cut -f1)"
+            if [[ -n "$remote_sha" ]]; then
+              git fetch --no-tags origin "$remote_sha"
+              if git diff --quiet FETCH_HEAD -- content/pages/cv.md content/pages/home.md content/pages/services.md content/pages/projects.md content/pages/projects/asira.md content/pages/projects/nordhem.md content/pages/projects/stockholmsmassan.md content/generated-provenance.json; then
+                if [[ "$pr_state" == "CLOSED" && "$REOPEN_CLOSED" == "true" ]]; then gh pr reopen "$pr_number" --repo "$repo"; fi
+                echo "changed=false" >> "$GITHUB_OUTPUT"
+                echo "Generated outputs match the existing PR branch; leaving it untouched."
+                exit 0
+              fi
+            fi
+          fi
+          git switch -C "$branch"
+          git add content/pages/cv.md content/pages/home.md content/pages/services.md content/pages/projects.md content/pages/projects/asira.md content/pages/projects/nordhem.md content/pages/projects/stockholmsmassan.md content/generated-provenance.json
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "chore(content): regenerate approved CV pages"
+          remote_sha="$(git ls-remote --heads origin "refs/heads/$branch" | cut -f1)"
+          auth_header="$(printf 'x-access-token:%s' "$CONTENT_WRITER_TOKEN" | base64 -w0)"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth_header" push --force-with-lease="refs/heads/$branch:$remote_sha" origin "HEAD:refs/heads/$branch"
+
+          title="Regenerate public CV pages"
+          body="$(cat <<'EOF'
+          ## Generated public CV content
+
+          This PR was generated from the owner-approved canonical CV source and mapping on `main`.
+
+          - Review the rendered pages against `content/sources/master-cv.md`.
+          - The source/map/generator and output hashes are recorded in `content/generated-provenance.json`.
+          - Only the fixed public CV page allowlist is generated; contact, demo-profile and profile pages are excluded.
+          - Merging this PR dispatches a typed update to the app repository. App release remains a separate manual step.
+          EOF
+          )"
+          if [[ -n "$pr_number" ]]; then
+            if [[ "$REOPEN_CLOSED" == "true" ]]; then gh pr reopen "$pr_number" --repo "$repo"; fi
+            gh pr edit "$pr_number" --repo "$repo" --title "$title" --body "$body" --add-label generated-content
+            echo "number=$pr_number" >> "$GITHUB_OUTPUT"
+            echo "action=updated" >> "$GITHUB_OUTPUT"
+          else
+            pr_url="$(gh pr create --repo "$repo" --base main --head "$branch" --title "$title" --body "$body")"
+            gh pr edit "$pr_url" --repo "$repo" --add-label generated-content
+            echo "number=$(gh pr view "$pr_url" --repo "$repo" --json number --jq .number)" >> "$GITHUB_OUTPUT"
+            echo "action=created" >> "$GITHUB_OUTPUT"
+          fi
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+      - name: Write workflow summary
+        if: always()
+        env:
+          RESULT: ${{ steps.publish.outcome }}
+          ACTION: ${{ steps.publish.outputs.action }}
+          PR_NUMBER: ${{ steps.publish.outputs.number }}
+          CHANGED: ${{ steps.publish.outputs.changed }}
+        run: |
+          {
+            echo "## Generated content PR"
+            echo "- Workflow result: \`${RESULT:-not started}\`"
+            echo "- Generated page changes: \`${CHANGED:-unknown}\`"
+            if [[ -n "$PR_NUMBER" ]]; then echo "- Pull request: #$PR_NUMBER ($ACTION)"; fi
+            echo "- Trusted ref: \`$GITHUB_REF\`"
+            echo "- A closed, unmerged PR can only be reopened by manual dispatch with \`reopen_closed=true\`."
+          } >> "$GITHUB_STEP_SUMMARY"

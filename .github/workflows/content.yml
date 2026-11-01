@@ -12,13 +12,18 @@ jobs:
   validate-content:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v7.0.1
-      - uses: actions/setup-node@v7.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
           cache: npm
       - run: npm ci
+      - run: npm test
+      - run: npm run generate:validate-source
       - run: npm run validate
+      - run: npm run generate:check
       - run: npm audit --audit-level=moderate
       - name: Scan repository for secrets
         run: docker run --rm -v "${{ github.workspace }}:/repo" zricethezav/gitleaks:v8.30.1 detect --source=/repo --no-git --redact --exit-code 1
