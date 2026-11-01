@@ -72,7 +72,7 @@ jobs:
         shell: pwsh
         run: .\app\scripts\ensure-webdeploy.ps1 -InstallerPath (Join-Path $env:RUNNER_TEMP 'WebDeploy_amd64_en-US.msi')
       - name: Upload activation token to releases root
-        shell: pwsh
+        shell: powershell
         env:
           DEPLOY_PASSWORD: ${{ secrets.DEPLOY_PASSWORD }}
           CONTENT_ACTIVATION_TOKEN_NEXT: ${{ secrets.CONTENT_ACTIVATION_TOKEN_NEXT }}
