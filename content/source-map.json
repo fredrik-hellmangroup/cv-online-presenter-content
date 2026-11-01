@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "source": "content/sources/master-cv.md",
+  "generatedPages": [
+    {
+      "path": "content/pages/cv.md",
+      "type": "page",
+      "title": "CV",
+      "description": "Fullständigt CV för Fredrik Hallerös, lösningsarkitekt och senior .NET-konsult.",
+      "locale": "sv-SE",
+      "status": "published",
+      "sourceSection": "Entire source"
+    },
+    {
+      "path": "content/pages/home.md",
+      "type": "page",
+      "title": "Fredrik Hallerös – Lösningsarkitekt och senior .NET-konsult",
+      "description": "Lösningsarkitekt och senior .NET-konsult med erfarenhet av integration, Azure och datadrivna lösningar.",
+      "locale": "sv-SE",
+      "status": "published",
+      "sourceSections": [
+        "Roller",
+        "Översikt"
+      ]
+    },
+    {
+      "path": "content/pages/services.md",
+      "type": "page",
+      "title": "Kompetens",
+      "description": "Fredrik Hallerös kompetens inom lösningsarkitektur, .NET, integration och plattform.",
+      "locale": "sv-SE",
+      "status": "published",
+      "sourceSection": "Kompetensområden"
+    },
+    {
+      "path": "content/pages/projects.md",
+      "type": "page",
+      "title": "Uppdrag",
+      "description": "Urval av uppdrag ur Fredrik Hallerös godkända CV.",
+      "locale": "sv-SE",
+      "status": "published",
+      "sourceSection": "Uppdragshistorik",
+      "selectedProjects": [
+        {
+          "section": "Nordhemfastighetsmäkleri",
+          "path": "/projects/nordhem"
+        },
+        {
+          "section": "Stockholms Mässan",
+          "path": "/projects/stockholmsmassan"
+        },
+        {
+          "section": "Asira",
+          "path": "/projects/asira"
+        }
+      ]
+    },
+    {
+      "path": "content/pages/projects/asira.md",
+      "type": "project",
+      "title": "Asira",
+      "description": "Arkitektur och utveckling av en digital plattform för fastighetsförmedling.",
+      "locale": "sv-SE",
+      "status": "published",
+      "summary": "Fullstackutveckling och integrationer för objekts- och mäklarinformation.",
+      "technologies": [
+        "ASP.NET",
+        "Razor Pages",
+        "Entity Framework",
+        "SQL Server",
+        "JavaScript"
+      ],
+      "links": "Inga externa länkar publicerade",
+      "sourceSection": "Uppdragshistorik / Asira",
+      "sourceHeading": "Asira"
+    },
+    {
+      "path": "content/pages/projects/nordhem.md",
+      "type": "project",
+      "title": "Nordhem Fastighetsmäkleri",
+      "description": "Lead fullstackutveckling för en digital fastighetsupplevelse.",
+      "locale": "sv-SE",
+      "status": "published",
+      "summary": "Arkitektur och fullstackutveckling i .NET och React.",
+      "technologies": [
+        "ASP.NET Core",
+        "React",
+        "TypeScript",
+        "SQL Server",
+        "Entity Framework Core"
+      ],
+      "links": "Inga externa länkar publicerade",
+      "sourceSection": "Uppdragshistorik / Nordhemfastighetsmäkleri",
+      "sourceHeading": "Nordhemfastighetsmäkleri"
+    },
+    {
+      "path": "content/pages/projects/stockholmsmassan.md",
+      "type": "project",
+      "title": "Stockholmsmässan",
+      "description": "Teknisk arkitektur och integration mellan affärs- och eventplattformar.",
+      "locale": "sv-SE",
+      "status": "published",
+      "summary": "Integration och plattformsarbete mellan verksamhetssystem, webb och data.",
+      "technologies": [
+        "REST",
+        "webhooks",
+        "BizTalk",
+        "SQL Server",
+        "Ruby",
+        "C#"
+      ],
+      "links": "Inga externa länkar publicerade",
+      "sourceSection": "Uppdragshistorik / Stockholms Mässan",
+      "sourceHeading": "Stockholms Mässan"
+    }
+  ],
+  "bootstrapOutputSha256": {
+    "content/pages/cv.md": "2de0f24d035aeceb279a8139c176697a54cd28d8af493805d4f4ccd277e5a90a",
+    "content/pages/home.md": "f3843b2685b5123980d4e8d7b6d300a598833e7f77dcf7144fabb24fddeabd2a",
+    "content/pages/services.md": "0b904e6e214b3347cd6e836881d7d674d94f773b51cf700bda3889be7645e186",
+    "content/pages/projects.md": "0ac0fde4feab04986b19e80d73f1e1605265216e45a8229e3fc84d97f29a9448",
+    "content/pages/projects/asira.md": "d33a32ed5271945aaff1f3e2e37b994c99e3501b873215b3b03e5c7c26ddd082",
+    "content/pages/projects/nordhem.md": "684bd21ad421f8fde1267ca642a7c74c6bba7c8696879ebf7f36432d9eef5c24",
+    "content/pages/projects/stockholmsmassan.md": "471168af021977a6d24a7ab27393072d97861219da1083fdc3d61a87e806ec75"
+  }
+}

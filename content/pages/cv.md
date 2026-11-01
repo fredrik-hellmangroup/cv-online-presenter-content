@@ -1,13 +1,15 @@
 ---
-title: CV
-description: Fullständigt CV för Fredrik Hallerös, lösningsarkitekt och senior .NET-konsult.
-locale: sv-SE
-status: published
-type: page
-source: sources/owner-cv-v1.2.md
-sourceSha256: 04EFA1B7F6844E628A1F992B9A081025D690CF62CBC3BDFCF4B780FAA02DB03C
+title: "CV"
+description: "Fullständigt CV för Fredrik Hallerös, lösningsarkitekt och senior .NET-konsult."
+locale: "sv-SE"
+status: "published"
+type: "page"
+source: "sources/master-cv.md"
+sourceSection: "Entire source"
+sourceSha256: "67cad6e5ad74c60f3584787b51fea7a1ab1819d8d2976fe517b44e064c932c67"
 ---
-# Fredrik Hallerös – Lösningsarkitekt och senior .NET-konsult
+
+# FREDRIK HALLERÖS
 
 ## Roller
 - Lösningsarkitekt / teknisk lead nära implementation
@@ -73,7 +75,7 @@ aktuell objektsdata, lead capture och premiumexponering av objekt och mäklartea
 React, TypeScript, Vite, Tailwind CSS, Google GenAI, ASP.NET Core, .NET, Entity Framework Core, SQL Server, Vitec API, Swagger, GitHub Actions, IIS, Claude Code, GitHub Copilot, JWT
 
 ### Stockholms Mässan
-**Period:** 2025 - 2026  
+**Period:** 2025 - 2026\
 **Roll:** Teknisk arkitekt / Fullstack-utvecklare – Integration & Plattform
 
 Stockholmsmässan driver Nordens största mötesplats för mässor och event och har ett
@@ -100,7 +102,7 @@ Arbetet bidrar till stabilare IT-stöd, snabbare informationshantering och bätt
 SQL, Ruby, C#, integrationer, datakommunikation, automatisering, systemintegration, informationsflöden, verksamhetsnära utveckling, GitHub Copilot, Claude Code, AI-assisterade arbetsflöden
 
 ### Asira
-**Period:** 2023 - pågående  
+**Period:** 2023 - pågående\
 **Roll:** Teknisk arkitekt / Fullstack-utvecklare (.NET)
 
 Asira Fastighetsmäkleri är en mindre, digitalt driven fastighetsförmedlare med höga krav på
@@ -123,7 +125,7 @@ Lösningen förbättrade arbetsflödena för mäklare, höll fastighetsdata aktu
 Piranha CMS, ASP.NET, Razor Pages, SQL Server, REST API, JavaScript, HTML, CSS, Bootstrap, Vitec, CMS, mäklarsystem, realtidsdata, datakvalitet, integrationer, SOLID, design patterns
 
 ### HoF Roslagen AB
-**Period:** 2023 - pågående  
+**Period:** 2023 - pågående\
 **Roll:** Plattformsarkitekt / Fullstack-utvecklare (Cloud-native)
 
 HoF Roslagen AB driver restaurangverksamhet och ansvarar för Fetta di Pizza, en napolitansk
@@ -148,7 +150,7 @@ Lösningen minskade manuell administration, ökade konverteringen och gav kunder
 Blazor, RabbitMQ, gRPC, Redis, PostgreSQL, Azure DevOps, Docker, Kubernetes, Swish, iZettle, OpenID Connect, Passkey, mikrotjänster, eventdriven arkitektur, onlinebokning, betalningsintegrationer, CI/CD, serverless, OAuth, JWT, SOLID, design patterns, GitHub Copilot, Claude Code
 
 ### Bring Shelfless
-**Period:** 2023 - 2024  
+**Period:** 2023 - 2024\
 **Roll:** Senior Systemutvecklare – DevOps & Plattform
 
 Bring Shelfless är Brings fulfilment- och lagerplattform för e-handlare i Norden, med höga krav på skalbarhet, driftsäkerhet och snabba leveranser.
@@ -169,7 +171,7 @@ Plattformen blev snabbare, stabilare och mer skalbar. Releasecykler förkortades
 .NET, SQL Server, Dapper, Entity Framework Core, Docker, Azure DevOps, YAML CI/CD, Azure Container Registry, xUnit, NSubstitute, AutoFixture, Angular, containerisering, DevOps, logistiksystem, 3PL, agila arbetssätt, serverless, OAuth, JWT, SOLID, design patterns
 
 ### Telia Sverige AB
-**Period:** 2020 - 2023  
+**Period:** 2020 - 2023\
 **Roll:** Senior Backendutvecklare – IoT & Distributed Systems
 
 Telia Company är en internationell telekomoperatör med omfattande B2B-erbjudanden inom
@@ -192,7 +194,7 @@ Plattformen utvecklades till en strategisk produkt för företagskunder och gav 
 Azure IoT Hub, EventHub, AKS, Service Fabric, API Management, Cosmos DB, MQTT, REST, SOAP, Docker, Helm, Bicep, Azure DevOps, SonarCloud, IoT, realtidsdata, molnarkitektur, B2B-plattform, observability, agila arbetssätt, data lakes, serverless, OAuth, JWT, SOLID, design patterns
 
 ### Statens institutionsstyrelse
-**Period:** 2019 - 2020  
+**Period:** 2019 - 2020\
 **Roll:** Fullstack-utvecklare – Lex Maria och incidenthantering
 
 Statens institutionsstyrelse är en statlig myndighet med ansvar för tvångsvård och krav på
@@ -212,7 +214,7 @@ Portalen ökade rapporteringstakten och precisionen i ärendehanteringen samtidi
 ASP.NET, MVC, Angular, C#, SQL Server, REST API, JavaScript, HTML, CSS, Bootstrap, digitalisering, offentlig sektor, agila arbetssätt, SOLID, design patterns
 
 ### Guy Carpenter
-**Period:** 2016 - 2020  
+**Period:** 2016 - 2020\
 **Roll:** Senior Fullstack-utvecklare – Risk & Försäkringssystem
 
 Guy Carpenter är en global aktör inom återförsäkring och riskanalys med krav på interna
@@ -253,7 +255,7 @@ Migreringen genomfördes med minimal påverkan på verksamheten och bidrog till 
 Microsoft Azure, migrering, licensanalys, hosting
 
 ### Trygghansa
-**Period:** 2018 - 2019  
+**Period:** 2018 - 2019\
 **Roll:** Lead Test Automation Engineer (.NET)
 
 Trygg-Hansa är ett etablerat försäkringsbolag med affärskritiska system och höga krav på
@@ -317,7 +319,7 @@ Det nya systemet förbättrade dokumenthanteringen, ökade spårbarheten och min
 ASP.NET, SharePoint, SQL Server, REST API, offentlig sektor, agila arbetssätt, SOLID, design patterns
 
 ### Arbetsförmedlingen
-**Period:** 2017 - 2018  
+**Period:** 2017 - 2018\
 **Roll:** Systemutvecklare – Myndighetssystem & CI/CD
 
 Arbetsförmedlingen är en statlig myndighet med omfattande systemstöd för handläggning,
@@ -397,7 +399,7 @@ Lösningen gav ett stabilare och snabbare datagrundlag för rapportering, analys
 Oracle, SSIS, Microsoft SQL Server, Data Warehouse, Power BI, GitLab, ETL, SFTP, integrationer, rapportering, data lakes
 
 ## Anställningar
-- Egenföretagare IT-konsult, Hellman Group AB, 2023 - pågående
+- IT-konsult, Hellman Group AB, 2023 - pågående
 - Sammarbetsavtal, Kvadrat, 2025 - 2026
 - IoT Backend Engineer, Telia Company AB, 2020 - 2023
 - IT-konsult, Consid, 2016 - 2020
@@ -405,4 +407,3 @@ Oracle, SSIS, Microsoft SQL Server, Data Warehouse, Power BI, GitLab, ETL, SFTP,
 
 ## Språk
 Svenska, Engelska
-
