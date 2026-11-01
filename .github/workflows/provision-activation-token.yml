@@ -1,0 +1,128 @@
+name: Provision activation token
+
+on:
+  workflow_dispatch:
+    inputs:
+      use_primary_secret:
+        description: Use the existing primary token for recovery after a failed staged provisioning run
+        required: true
+        type: boolean
+        default: false
+
+run-name: Provision activation token on ${{ github.ref_name }}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-content
+  cancel-in-progress: false
+
+jobs:
+  provision:
+    if: github.ref == 'refs/heads/main'
+    runs-on: windows-latest
+    environment: production-content
+    env:
+      MSDEPLOY_SERVER_URL: ${{ vars.MSDEPLOY_SERVER_URL }}
+      MSDEPLOY_SITE_NAME: ${{ vars.MSDEPLOY_SITE_NAME }}
+      MSDEPLOY_CERTIFICATE_SHA256: ${{ vars.MSDEPLOY_CERTIFICATE_SHA256 }}
+      DEPLOY_USERNAME: ${{ vars.DEPLOY_USERNAME }}
+      APP_REPO_REF: ${{ vars.APP_REPO_REF }}
+    steps:
+      - name: Validate configuration
+        shell: pwsh
+        run: |
+          $required = @(
+            'MSDEPLOY_SERVER_URL',
+            'MSDEPLOY_SITE_NAME',
+            'MSDEPLOY_CERTIFICATE_SHA256',
+            'DEPLOY_USERNAME',
+            'APP_REPO_REF'
+          )
+          foreach ($name in $required) {
+            if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))) {
+              throw "Environment variable '$name' is required."
+            }
+          }
+          if ($env:APP_REPO_REF -cne 'main') {
+            throw 'APP_REPO_REF must be main for trusted helper code.'
+          }
+          if ($env:MSDEPLOY_SERVER_URL -notmatch '^https://[^/@\s]+(?::\d+)?(?:/.*)?$') {
+            throw 'MSDEPLOY_SERVER_URL must be an HTTPS URL without embedded credentials.'
+          }
+          if ($env:MSDEPLOY_SITE_NAME -match '[\\/:]' -or $env:MSDEPLOY_SITE_NAME -match '[\x00-\x1F]' -or $env:MSDEPLOY_SITE_NAME -ne $env:MSDEPLOY_SITE_NAME.Trim() -or $env:MSDEPLOY_SITE_NAME -in @('.', '..')) {
+            throw 'MSDEPLOY_SITE_NAME must be a single site name without surrounding whitespace, control characters, or path separators.'
+          }
+          $fingerprint = $env:MSDEPLOY_CERTIFICATE_SHA256.Replace(':', '').Replace(' ', '')
+          if ($fingerprint -notmatch '^[A-Fa-f0-9]{64}$') {
+            throw 'MSDEPLOY_CERTIFICATE_SHA256 must contain a SHA-256 certificate fingerprint.'
+          }
+          $releaseRoot = "$($env:MSDEPLOY_SITE_NAME)/App_Data/content-releases"
+          if ($releaseRoot -match '(^|[\\/])\.{1,2}([\\/]|$)' -or $releaseRoot -match '^(?:[\\/]|[A-Za-z]:)') {
+            throw 'The derived content-releases destination must be a safe site-root-relative path.'
+          }
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: fredrik-hellmangroup/cv-online-presenter
+          ref: ${{ vars.APP_REPO_REF }}
+          path: app
+          persist-credentials: false
+      - name: Ensure verified Microsoft Web Deploy is available
+        shell: pwsh
+        run: .\app\scripts\ensure-webdeploy.ps1 -InstallerPath (Join-Path $env:RUNNER_TEMP 'WebDeploy_amd64_en-US.msi')
+      - name: Upload activation token to releases root
+        shell: pwsh
+        env:
+          DEPLOY_PASSWORD: ${{ secrets.DEPLOY_PASSWORD }}
+          CONTENT_ACTIVATION_TOKEN_NEXT: ${{ secrets.CONTENT_ACTIVATION_TOKEN_NEXT }}
+          CONTENT_ACTIVATION_TOKEN_PRIMARY: ${{ secrets.CONTENT_ACTIVATION_TOKEN }}
+          USE_PRIMARY_SECRET: ${{ inputs.use_primary_secret }}
+        run: |
+          $tokenDirectory = $null
+          $token = $null
+          try {
+            if ($env:USE_PRIMARY_SECRET -cnotin @('true', 'false')) {
+              throw 'The recovery input must be true or false.'
+            }
+            if ([string]::IsNullOrWhiteSpace($env:DEPLOY_PASSWORD)) {
+              throw 'DEPLOY_PASSWORD is required for Web Deploy.'
+            }
+            $token = if ($env:USE_PRIMARY_SECRET -ceq 'true') {
+              $env:CONTENT_ACTIVATION_TOKEN_PRIMARY
+            }
+            else {
+              $env:CONTENT_ACTIVATION_TOKEN_NEXT
+            }
+            if ([string]::IsNullOrWhiteSpace($token) -or $token.Length -lt 32) {
+              throw 'The selected activation-token secret must contain at least 32 characters.'
+            }
+            if ($token -cne $token.Trim()) {
+              throw 'The selected activation-token secret must not have leading or trailing whitespace.'
+            }
+
+            $tokenDirectory = Join-Path $env:RUNNER_TEMP "activation-token-$([guid]::NewGuid().ToString('N'))"
+            New-Item -ItemType Directory -Path $tokenDirectory | Out-Null
+            $encoding = [Text.UTF8Encoding]::new($false)
+            [IO.File]::WriteAllText((Join-Path $tokenDirectory 'activation-token.txt'), $token, $encoding)
+            $deployContentPath = "$($env:MSDEPLOY_SITE_NAME)/App_Data/content-releases"
+
+            & .\app\scripts\deploy-beebyte-iis.ps1 `
+              -ActivationTokenOnly `
+              -SourcePath $tokenDirectory `
+              -DeployContentPath $deployContentPath `
+              -DeployServerUrl $env:MSDEPLOY_SERVER_URL `
+              -DeploySiteName $env:MSDEPLOY_SITE_NAME `
+              -DeployUsername $env:DEPLOY_USERNAME `
+              -DeployCertificateSha256 $env:MSDEPLOY_CERTIFICATE_SHA256
+          }
+          finally {
+            $token = $null
+            Remove-Item Env:CONTENT_ACTIVATION_TOKEN_NEXT -ErrorAction SilentlyContinue
+            Remove-Item Env:CONTENT_ACTIVATION_TOKEN_PRIMARY -ErrorAction SilentlyContinue
+            Remove-Item Env:DEPLOY_PASSWORD -ErrorAction SilentlyContinue
+            Remove-Item Env:USE_PRIMARY_SECRET -ErrorAction SilentlyContinue
+            if ($tokenDirectory -and (Test-Path -LiteralPath $tokenDirectory)) {
+              Remove-Item -LiteralPath $tokenDirectory -Recurse -Force -ErrorAction SilentlyContinue
+            }
+          }
