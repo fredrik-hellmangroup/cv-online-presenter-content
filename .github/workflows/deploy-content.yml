@@ -6,7 +6,6 @@ on:
     paths:
       - content/pages/**
       - content/site.json
-      - .github/workflows/deploy-content.yml
   workflow_dispatch:
     inputs:
       activate_release_id:
@@ -51,6 +50,17 @@ jobs:
           }
           if ($env:CONTENT_ACTIVATION_URL -notmatch '^https://') { throw 'CONTENT_ACTIVATION_URL must be an https:// URL.' }
           if ($env:ROLLBACK_RELEASE_ID -and $env:ROLLBACK_RELEASE_ID -notmatch '^[A-Za-z0-9_-]{1,100}$') { throw 'activate_release_id contains invalid characters.' }
+          if (-not $env:ROLLBACK_RELEASE_ID) {
+            if ($env:APP_REPO_REF -cne 'main') { throw "APP_REPO_REF must be exactly 'main' for content uploads." }
+            if ($env:MSDEPLOY_SITE_NAME -notmatch '^[A-Za-z0-9](?:[A-Za-z0-9 ._-]{0,126}[A-Za-z0-9_-])?$') {
+              throw 'MSDEPLOY_SITE_NAME contains invalid characters or formatting.'
+            }
+            $normalizedReleasesPath = $env:MSDEPLOY_CONTENT_RELEASES_PATH.Replace('\', '/').TrimEnd('/')
+            $expectedReleasesPath = "$($env:MSDEPLOY_SITE_NAME)/App_Data/content-releases"
+            if ($normalizedReleasesPath -cne $expectedReleasesPath) {
+              throw 'MSDEPLOY_CONTENT_RELEASES_PATH must match the configured site root content-releases path.'
+            }
+          }
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: content-repo
@@ -102,10 +112,18 @@ jobs:
         env:
           CONTENT_ACTIVATION_TOKEN: ${{ secrets.CONTENT_ACTIVATION_TOKEN }}
         run: |
+          $ErrorActionPreference = 'Stop'
           $releaseId = if ($env:ROLLBACK_RELEASE_ID) { $env:ROLLBACK_RELEASE_ID } else { $env:RELEASE_ID }
           $base = $env:CONTENT_ACTIVATION_URL.TrimEnd('/')
           $headers = @{ 'X-Content-Activation-Token' = $env:CONTENT_ACTIVATION_TOKEN }
           $preview = Invoke-RestMethod -Method Post -Uri "$base/internal/content/preview/$releaseId" -Headers $headers
+          if ($null -eq $preview) { throw 'Preview returned no result; activation is blocked.' }
+          foreach ($field in @('added', 'removed', 'changed')) {
+            $previewField = $preview.PSObject.Properties[$field]
+            if ($null -eq $previewField -or $previewField.Value -isnot [System.Array]) {
+              throw "Preview result is missing the expected '$field' list; activation is blocked."
+            }
+          }
           Write-Output ("Preview diff: {0} added, {1} removed, {2} changed section(s)." -f @($preview.added).Count, @($preview.removed).Count, @($preview.changed).Count)
           $activated = Invoke-RestMethod -Method Post -Uri "$base/internal/content/activate/$releaseId" -Headers $headers
           Write-Output "Activated release $releaseId (snapshot $($activated.toVersion))."
