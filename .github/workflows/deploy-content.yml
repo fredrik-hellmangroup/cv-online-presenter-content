@@ -1,0 +1,109 @@
+name: Deploy content
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - content/pages/**
+      - content/site.json
+      - .github/workflows/deploy-content.yml
+  workflow_dispatch:
+    inputs:
+      activate_release_id:
+        description: Rollback - activate an existing release id on the server without uploading
+        required: false
+        type: string
+        default: ''
+
+run-name: Deploy content from ${{ github.ref_name }}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-content
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: windows-latest
+    environment: production-content
+    env:
+      MSDEPLOY_SERVER_URL: ${{ vars.MSDEPLOY_SERVER_URL }}
+      MSDEPLOY_SITE_NAME: ${{ vars.MSDEPLOY_SITE_NAME }}
+      MSDEPLOY_CERTIFICATE_SHA256: ${{ vars.MSDEPLOY_CERTIFICATE_SHA256 }}
+      MSDEPLOY_CONTENT_RELEASES_PATH: ${{ vars.MSDEPLOY_CONTENT_RELEASES_PATH }}
+      DEPLOY_USERNAME: ${{ vars.DEPLOY_USERNAME }}
+      CONTENT_ACTIVATION_URL: ${{ vars.CONTENT_ACTIVATION_URL }}
+      APP_REPO_REF: ${{ vars.APP_REPO_REF }}
+      ROLLBACK_RELEASE_ID: ${{ inputs.activate_release_id }}
+    steps:
+      - name: Validate configuration
+        shell: pwsh
+        run: |
+          foreach ($name in 'MSDEPLOY_SERVER_URL', 'MSDEPLOY_SITE_NAME', 'MSDEPLOY_CERTIFICATE_SHA256', 'MSDEPLOY_CONTENT_RELEASES_PATH', 'DEPLOY_USERNAME', 'CONTENT_ACTIVATION_URL', 'APP_REPO_REF') {
+            if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))) { throw "Environment variable '$name' is required." }
+          }
+          if ($env:CONTENT_ACTIVATION_URL -notmatch '^https://') { throw 'CONTENT_ACTIVATION_URL must be an https:// URL.' }
+          if ($env:ROLLBACK_RELEASE_ID -and $env:ROLLBACK_RELEASE_ID -notmatch '^[A-Za-z0-9_-]{1,100}$') { throw 'activate_release_id contains invalid characters.' }
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: content-repo
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: env.ROLLBACK_RELEASE_ID == ''
+        with:
+          repository: fredrik-hellmangroup/cv-online-presenter
+          ref: ${{ vars.APP_REPO_REF }}
+          path: app
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        if: env.ROLLBACK_RELEASE_ID == ''
+        with:
+          global-json-file: app/global.json
+      - name: Validate content with the app's validator
+        if: env.ROLLBACK_RELEASE_ID == ''
+        shell: pwsh
+        run: dotnet run --project app/tools/Portfolio.Content.Validator -- --content content-repo/content/pages
+      - name: Package release
+        if: env.ROLLBACK_RELEASE_ID == ''
+        shell: pwsh
+        run: |
+          $releaseId = '{0}-{1}' -f (Get-Date).ToUniversalTime().ToString('yyyyMMdd-HHmmss'), $env:GITHUB_SHA.Substring(0, 7)
+          "RELEASE_ID=$releaseId" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          New-Item -ItemType Directory -Path release | Out-Null
+          Copy-Item content-repo/content/site.json release/site.json
+          Copy-Item content-repo/content/pages release/pages -Recurse
+      - name: Ensure verified Microsoft Web Deploy is available
+        if: env.ROLLBACK_RELEASE_ID == ''
+        shell: pwsh
+        run: .\app\scripts\ensure-webdeploy.ps1 -InstallerPath (Join-Path $env:RUNNER_TEMP 'WebDeploy_amd64_en-US.msi')
+      - name: Upload release folder with Web Deploy
+        if: env.ROLLBACK_RELEASE_ID == ''
+        shell: powershell
+        env:
+          DEPLOY_PASSWORD: ${{ secrets.DEPLOY_PASSWORD }}
+        run: |
+          .\app\scripts\deploy-beebyte-iis.ps1 `
+            -ContentRelease `
+            -SourcePath 'release' `
+            -DeployContentPath ("{0}/{1}" -f $env:MSDEPLOY_CONTENT_RELEASES_PATH.TrimEnd('/', '\'), $env:RELEASE_ID) `
+            -DeployServerUrl $env:MSDEPLOY_SERVER_URL `
+            -DeploySiteName $env:MSDEPLOY_SITE_NAME `
+            -DeployUsername $env:DEPLOY_USERNAME `
+            -DeployCertificateSha256 $env:MSDEPLOY_CERTIFICATE_SHA256
+      - name: Preview and activate release
+        shell: pwsh
+        env:
+          CONTENT_ACTIVATION_TOKEN: ${{ secrets.CONTENT_ACTIVATION_TOKEN }}
+        run: |
+          $releaseId = if ($env:ROLLBACK_RELEASE_ID) { $env:ROLLBACK_RELEASE_ID } else { $env:RELEASE_ID }
+          $base = $env:CONTENT_ACTIVATION_URL.TrimEnd('/')
+          $headers = @{ 'X-Content-Activation-Token' = $env:CONTENT_ACTIVATION_TOKEN }
+          $preview = Invoke-RestMethod -Method Post -Uri "$base/internal/content/preview/$releaseId" -Headers $headers
+          Write-Output ("Preview diff: {0} added, {1} removed, {2} changed section(s)." -f @($preview.added).Count, @($preview.removed).Count, @($preview.changed).Count)
+          $activated = Invoke-RestMethod -Method Post -Uri "$base/internal/content/activate/$releaseId" -Headers $headers
+          Write-Output "Activated release $releaseId (snapshot $($activated.toVersion))."
+          $health = Invoke-WebRequest -Uri "$base/health" -UseBasicParsing
+          if ($health.StatusCode -ne 200) { throw "Health check returned $($health.StatusCode)." }
