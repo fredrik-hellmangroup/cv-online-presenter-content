@@ -42,7 +42,11 @@ jobs:
       - name: Validate configuration
         shell: pwsh
         run: |
-          foreach ($name in 'MSDEPLOY_SERVER_URL', 'MSDEPLOY_SITE_NAME', 'MSDEPLOY_CERTIFICATE_SHA256', 'MSDEPLOY_CONTENT_RELEASES_PATH', 'DEPLOY_USERNAME', 'CONTENT_ACTIVATION_URL', 'APP_REPO_REF') {
+          $required = @('CONTENT_ACTIVATION_URL')
+          if (-not $env:ROLLBACK_RELEASE_ID) {
+            $required += 'MSDEPLOY_SERVER_URL', 'MSDEPLOY_SITE_NAME', 'MSDEPLOY_CERTIFICATE_SHA256', 'MSDEPLOY_CONTENT_RELEASES_PATH', 'DEPLOY_USERNAME', 'APP_REPO_REF'
+          }
+          foreach ($name in $required) {
             if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))) { throw "Environment variable '$name' is required." }
           }
           if ($env:CONTENT_ACTIVATION_URL -notmatch '^https://') { throw 'CONTENT_ACTIVATION_URL must be an https:// URL.' }
